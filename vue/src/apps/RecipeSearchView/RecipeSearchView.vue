@@ -250,12 +250,20 @@
                 <div class="row">
                     <div class="col col-md-12">
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); grid-gap: 0.8rem">
+
                             <template v-if="!searchFiltered()">
                                 <recipe-card v-bind:key="`mp_${m.id}`" v-for="m in meal_plans" :recipe="m.recipe" :meal_plan="m" :footer_text="m.meal_type_name" footer_icon="far fa-calendar-alt"></recipe-card>
                             </template>
                             <recipe-card v-for="r in recipes" v-bind:key="r.id" :recipe="r" :footer_text="isRecentOrNew(r)[0]" :footer_icon="isRecentOrNew(r)[1]"> </recipe-card>
+                            <template v-if="loading">
+                                <recipe-card v-for="index in 5" v-bind:key="index - 100" :recipe="null"></recipe-card>
+                            </template>
                         </div>
                     </div>
+                </div>
+
+               <div class="row" v-if="!loading && recipes.length === 0">
+                    <h4 class="text-center">{{ $t('Empty_Search_Result') }}</h4>
                 </div>
 
                 <div class="row" style="margin-top: 2vh" v-if="!random_search">
@@ -307,6 +315,8 @@ export default {
             facets: {},
             meal_plans: [],
             last_viewed_recipes: [],
+
+            loading: true,
 
             search: {
                 advanced_search_visible: false,
@@ -436,12 +446,15 @@ export default {
         refreshData: function (random) {
             this.random_search = random
             let params = this.buildParams()
+            this.recipes = []
+            this.loading = true
             this.genericAPI(this.Models.RECIPE, this.Actions.LIST, params)
                 .then((result) => {
                     window.scrollTo(0, 0)
                     this.pagination_count = result.data.count
 
                     this.facets = result.data.facets
+                    this.loading = false
                     this.recipes = this.removeDuplicates(result.data.results, (recipe) => recipe.id)
                     if (!this.searchFiltered()) {
                         // if meal plans are being shown - filter out any meal plan recipes from the recipe list
